@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF Tour — 숙소 확인</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+  a{color:inherit;text-decoration:none}
+
+  /* ── header ── */
+  header{background:#fff;border-bottom:1px solid #e8e8e4;position:sticky;top:0;z-index:100;padding:12px 16px}
+  .header-inner{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+  .logo-title{font-size:15px;font-weight:600;color:#1a1a1a}
+  .logo-sub{font-size:11px;color:#999;margin-top:1px}
+  .mode-toggle{display:flex;gap:2px;background:#f0f0ec;padding:3px;border-radius:10px}
+  .mode-btn{padding:5px 14px;border-radius:8px;font-size:12px;font-weight:500;border:none;cursor:pointer;color:#888;background:transparent;transition:all .15s}
+  .mode-btn.active{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  /* ── main ── */
+  main{max-width:480px;margin:0 auto;padding:16px;padding-bottom:40px}
+  .section-label{font-size:11px;color:#aaa;margin-bottom:8px;letter-spacing:.4px;text-transform:uppercase}
+
+  /* ── tour grid ── */
+  .tour-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .tour-card{background:#fff;border:1px solid #e8e8e4;border-radius:14px;padding:12px;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+  .tour-card:hover{border-color:#bbb}
+  .tour-card.selected{border:2px solid #378ADD;background:#EBF4FC}
+  .tour-card-name{font-size:13px;font-weight:600;color:#1a1a1a;line-height:1.3}
+  .tour-card-nights{font-size:11px;color:#aaa;margin-top:3px}
+
+  /* ── tier selector ── */
+  .tier-selector{display:flex;gap:6px;margin-bottom:20px}
+  .tier-btn{flex:1;padding:10px 4px;border-radius:10px;border:1px solid #e0e0dc;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#888;transition:all .15s}
+  .tier-btn.basic.active{background:#F1EFE8;border-color:#888780;color:#3a3a38}
+  .tier-btn.balance.active{background:#EBF4FC;border-color:#378ADD;color:#0a4a8a}
+  .tier-btn.premium.active{background:#FEF3E2;border-color:#D4880A;color:#7a4500}
+
+  /* ── night block (customer) ── */
+  .night-block{margin-bottom:24px}
+  .night-heading{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .night-pill{background:#222;color:#ddd;font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;flex-shrink:0}
+  .night-divider{flex:1;height:1px;background:#e8e8e4}
+
+  /* ── accommodation card ── */
+  .acc-card{background:#fff;border:1px solid #e8e8e4;border-radius:16px;overflow:hidden}
+  .acc-img-wrap{width:100%;aspect-ratio:9/16;overflow:hidden;background:#f0f0ec;display:flex;align-items:center;justify-content:center}
+  .acc-img{width:100%;height:100%;object-fit:cover;display:block}
+  .acc-placeholder-icon{font-size:48px;opacity:.3}
+  .acc-body{padding:14px 16px}
+  .tier-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;margin-bottom:8px;letter-spacing:.3px}
+  .tier-badge.basic{background:#E0DDD5;color:#3a3a38}
+  .tier-badge.balance{background:#C8DFF5;color:#0a4a8a}
+  .tier-badge.premium{background:#FDE6B5;color:#7a4500}
+  .acc-name{font-size:15px;font-weight:600;color:#1a1a1a}
+  .acc-notes{font-size:12px;color:#888;margin-top:5px;line-height:1.6}
+  .acc-empty{font-size:13px;color:#bbb}
+
+  /* ── empty / loading ── */
+  .empty-state{text-align:center;padding:48px 20px;color:#bbb;font-size:13px}
+
+  /* ── manager list ── */
+  .mgr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .mgr-title{font-size:14px;font-weight:600;color:#1a1a1a}
+  .btn-primary{background:#378ADD;color:#fff;border:none;border-radius:9px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+  .btn-primary:hover{background:#185FA5}
+  .tour-row{background:#fff;border:1px solid #e8e8e4;border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .tour-row-name{font-size:13px;font-weight:600;color:#1a1a1a}
+  .tour-row-sub{font-size:11px;color:#aaa;margin-top:2px}
+  .row-actions{display:flex;gap:14px}
+  .btn-edit{font-size:12px;font-weight:600;color:#378ADD;background:none;border:none;cursor:pointer}
+  .btn-del{font-size:12px;font-weight:600;color:#E24B4A;background:none;border:none;cursor:pointer}
+
+  /* ── share link panel ── */
+  .share-panel{background:#f0f7ff;border:1px solid #c8dff5;border-radius:12px;padding:12px 14px;margin-top:8px}
+  .share-panel-title{font-size:11px;font-weight:600;color:#0a4a8a;margin-bottom:8px}
+  .share-link-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+  .share-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;min-width:48px;text-align:center}
+  .share-badge.basic{background:#E0DDD5;color:#3a3a38}
+  .share-badge.balance{background:#C8DFF5;color:#0a4a8a}
+  .share-badge.premium{background:#FDE6B5;color:#7a4500}
+  .share-link-input{flex:1;font-size:11px;color:#555;background:#fff;border:1px solid #ddd;border-radius:7px;padding:5px 8px;outline:none;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn-copy{font-size:11px;font-weight:600;color:#378ADD;background:none;border:none;cursor:pointer;flex-shrink:0;padding:4px 6px;border-radius:6px;transition:background .1s}
+  .btn-copy:hover{background:#EBF4FC}
+  .btn-copy.copied{color:#3B6D11}
+
+  /* ── add form ── */
+  .add-form{background:#fff;border:1px solid #dde;border-radius:14px;padding:14px;margin-bottom:12px}
+  .form-input{width:100%;border:1px solid #e0e0dc;border-radius:9px;padding:8px 11px;font-size:13px;background:#fff;color:#1a1a1a;margin-bottom:8px;outline:none;font-family:inherit}
+  .form-input:focus{border-color:#378ADD}
+  .nights-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .nights-row label{font-size:12px;color:#888}
+  .nights-row input{width:60px;text-align:center;margin-bottom:0}
+  .form-actions{display:flex;gap:6px}
+  .btn-create{flex:1;background:#378ADD;color:#fff;border:none;border-radius:9px;padding:9px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn-cancel{background:#f0f0ec;color:#888;border:none;border-radius:9px;padding:9px 16px;font-size:13px;cursor:pointer}
+
+  /* ── edit ── */
+  .edit-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .btn-back{background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1;padding:0 4px}
+  .btn-back:hover{color:#555}
+  .edit-name{font-size:14px;font-weight:600;color:#1a1a1a}
+  .edit-sub{font-size:11px;color:#aaa}
+  .night-section{margin-bottom:22px}
+  .night-label-edit{display:inline-block;background:#222;color:#ddd;font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;margin-bottom:10px}
+  .tier-block{border:1px solid #e8e8e4;border-radius:12px;padding:11px 13px;margin-bottom:7px}
+  .tier-block.basic{background:#F8F7F3}
+  .tier-block.balance{background:#F0F7FF}
+  .tier-block.premium{background:#FFFAF0}
+  .tier-block-label{font-size:11px;font-weight:700;margin-bottom:8px}
+  .tier-block.basic .tier-block-label{color:#3a3a38}
+  .tier-block.balance .tier-block-label{color:#0a4a8a}
+  .tier-block.premium .tier-block-label{color:#7a4500}
+  .tier-block .form-input{margin-bottom:6px;font-size:12px;padding:7px 10px}
+  .tier-block .form-input:last-child{margin-bottom:0}
+
+  /* ── image upload ── */
+  .img-upload-area{width:100%;aspect-ratio:9/16;border:1.5px dashed #ccc;border-radius:10px;background:#fafafa;cursor:pointer;overflow:hidden;position:relative;margin-bottom:6px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+  .img-upload-area:hover{border-color:#378ADD}
+  .img-preview{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+  .img-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none}
+  .img-empty-icon{font-size:22px;opacity:.4}
+  .img-empty-text{font-size:11px;color:#aaa;text-align:center;line-height:1.5}
+  .img-hidden-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .img-clear{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;font-weight:300}
+
+  /* ── save button ── */
+  .btn-save{width:100%;background:#378ADD;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;transition:background .15s}
+  .btn-save:hover{background:#185FA5}
+  .btn-save.saved{background:#3B6D11}
+
+  /* ── password screen ── */
+  .pw-screen{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px}
+  .pw-title{font-size:15px;font-weight:600;color:#1a1a1a}
+  .pw-sub{font-size:12px;color:#aaa;text-align:center}
+  .pw-input{width:100%;max-width:280px;border:1px solid #e0e0dc;border-radius:9px;padding:10px 14px;font-size:15px;text-align:center;letter-spacing:4px;outline:none;font-family:inherit}
+  .pw-input:focus{border-color:#378ADD}
+  .pw-btn{background:#378ADD;color:#fff;border:none;border-radius:9px;padding:10px 32px;font-size:13px;font-weight:600;cursor:pointer}
+  .pw-error{font-size:12px;color:#E24B4A}
+
+  /* ── footer ── */
+  footer{background:#fff;border-top:1px solid #e8e8e4;padding:18px 16px;text-align:center;margin-top:16px}
+  .footer-label{font-size:11px;color:#bbb;margin-bottom:10px}
+  .footer-links{display:flex;align-items:center;justify-content:center;gap:10px}
+  .footer-kakao{display:inline-flex;align-items:center;gap:5px;background:#FAC775;color:#5a3500;font-size:12px;font-weight:700;padding:7px 16px;border-radius:20px}
+  .footer-kakao:hover{background:#f5b84e}
+  .footer-email{display:inline-flex;align-items:center;gap:5px;background:#EBF4FC;color:#0a4a8a;font-size:12px;font-weight:600;padding:7px 16px;border-radius:20px}
+  .footer-email:hover{background:#d6eaf8}
+
+  /* ── client-only view (URL param mode) ── */
+  .client-header-info{background:#EBF4FC;border-bottom:1px solid #c8dff5;padding:10px 16px;text-align:center;font-size:12px;color:#0a4a8a;font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ── 비밀번호 ── 여기서 변경하세요
+const MANAGER_PASSWORD = "bftour2024";
+
+const TIERS = [
+  {key:"basic",   label:"베이직"},
+  {key:"balance", label:"밸런스"},
+  {key:"premium", label:"프리미엄"}
+];
+
+// URL 파라미터 파싱
+const params = new URLSearchParams(location.search);
+const URL_TOUR = params.get("tour");   // 투어 id 또는 이름
+const URL_TIER = params.get("tier");   // basic | balance | premium
+
+// 고객 전용 링크 모드 여부
+const CLIENT_MODE = !!(URL_TOUR && URL_TIER);
+
+let S = {
+  view: CLIENT_MODE ? "client" : "customer", // client | customer | manager
+  tours: [],
+  selTourId: null,
+  selTier: null,
+  editingTour: null,
+  addingTour: false,
+  newName: "",
+  newNights: 2,
+  saved: false,
+  pwError: false,
+  pwUnlocked: false
+};
+
+// ── 데이터 저장/로드 (localStorage) ──
+function loadData() {
+  try {
+    const raw = localStorage.getItem("bftour-data");
+    if (raw) S.tours = JSON.parse(raw);
+  } catch(_) {}
+
+  // 고객 전용 링크 모드: URL 파라미터로 투어/등급 자동 선택
+  if (CLIENT_MODE) {
+    const t = S.tours.find(x => x.id === URL_TOUR || x.name === URL_TOUR);
+    if (t) { S.selTourId = t.id; S.selTier = TIERS.find(x=>x.key===URL_TIER)?.key || null; }
+  }
+  render();
+}
+
+function persist(next) {
+  S.tours = next;
+  try {
+    localStorage.setItem("bftour-data", JSON.stringify(next));
+  } catch(e) {
+    alert("저장 용량이 초과되었습니다. 이미지 크기를 줄여주세요.");
+  }
+}
+
+function emptyNight() {
+  return {
+    basic:   {name:"", photo:"", notes:""},
+    balance: {name:"", photo:"", notes:""},
+    premium: {name:"", photo:"", notes:""}
+  };
+}
+
+// ── 렌더 ──
+function render() {
+  const app = document.getElementById("app");
+  let h = "";
+
+  // 고객 전용 링크 모드: 헤더 간소화, 모드 전환 숨김
+  if (CLIENT_MODE) {
+    const tier = TIERS.find(x=>x.key===S.selTier);
+    h += `<header><div class="header-inner"><div><div class="logo-title">BF Tour</div><div class="logo-sub">숙소 확인 시스템</div></div></div></header>`;
+    if (tier) h += `<div class="client-header-info">${tier.label} 옵션 숙소 안내</div>`;
+    h += `<main>${renderClientOnly()}</main>`;
+  } else {
+    h += `<header><div class="header-inner">
+      <div><div class="logo-title">BF Tour</div><div class="logo-sub">숙소 확인 시스템</div></div>
+      <div class="mode-toggle">
+        <button class="mode-btn${S.view==="customer"?" active":""}" onclick="setView('customer')">고객</button>
+        <button class="mode-btn${S.view==="manager"?" active":""}" onclick="setView('manager')">매니저</button>
+      </div>
+    </div></header><main>`;
+
+    if (S.view === "customer") h += renderCustomer();
+    else if (S.view === "manager" && !S.pwUnlocked) h += renderPwScreen();
+    else if (S.view === "manager" && !S.editingTour) h += renderManagerList();
+    else h += renderEdit();
+
+    h += `</main>`;
+  }
+
+  h += `<footer>
+    <div class="footer-label">문의하기</div>
+    <div class="footer-links">
+      <a href="http://pf.kakao.com/_xfxgaxfn" target="_blank" class="footer-kakao">💬 카카오채널</a>
+      <a href="mailto:bftour22@gmail.com" class="footer-email">✉️ 이메일</a>
+    </div>
+  </footer>`;
+
+  app.innerHTML = h;
+  bindEditInputs();
+}
+
+// ── 고객 전용 링크 뷰 (URL 파라미터) ──
+function renderClientOnly() {
+  const t = S.tours.find(x => x.id === S.selTourId);
+  if (!t || !S.selTier) return `<div class="empty-state">잘못된 링크입니다. 담당자에게 문의해주세요.</div>`;
+
+  let h = "";
+  t.accommodations.forEach((night, i) => {
+    const acc = night[S.selTier];
+    h += nightCard(acc, i, S.selTier);
+  });
+  return h;
+}
+
+// ── 일반 고객 뷰 ──
+function renderCustomer() {
+  const t = S.tours.find(x => x.id === S.selTourId);
+  let h = `<div class="section-label">투어 선택</div><div class="tour-grid">`;
+  if (!S.tours.length) h += `<div style="grid-column:1/-1" class="empty-state">등록된 투어가 없습니다.</div>`;
+  S.tours.forEach(tour => {
+    h += `<button class="tour-card${S.selTourId===tour.id?" selected":""}" onclick="selTour('${tour.id}')">
+      <div class="tour-card-name">${esc(tour.name)}</div>
+      <div class="tour-card-nights">${tour.nights}박 ${tour.nights+1}일</div>
+    </button>`;
+  });
+  h += `</div>`;
+
+  if (t) {
+    h += `<div class="section-label">등급 선택</div><div class="tier-selector">`;
+    TIERS.forEach(tier => {
+      h += `<button class="tier-btn ${tier.key}${S.selTier===tier.key?" active":""}" onclick="selTier('${tier.key}')">${tier.label}</button>`;
+    });
+    h += `</div>`;
+
+    if (S.selTier) {
+      t.accommodations.forEach((night, i) => {
+        h += nightCard(night[S.selTier], i, S.selTier);
+      });
+    }
+  }
+  return h;
+}
+
+function nightCard(acc, i, tierKey) {
+  const tierLabel = TIERS.find(x=>x.key===tierKey).label;
+  return `<div class="night-block">
+    <div class="night-heading"><span class="night-pill">${i+1}박차</span><div class="night-divider"></div></div>
+    <div class="acc-card">
+      <div class="acc-img-wrap">
+        ${acc.photo ? `<img class="acc-img" src="${acc.photo}" alt="${esc(acc.name)}">` : `<div class="acc-placeholder-icon">🏨</div>`}
+      </div>
+      <div class="acc-body">
+        <div class="tier-badge ${tierKey}">${tierLabel}</div>
+        ${acc.name
+          ? `<div class="acc-name">${esc(acc.name)}</div>${acc.notes?`<div class="acc-notes">${esc(acc.notes)}</div>`:""}`
+          : `<div class="acc-empty">숙소 정보 준비 중입니다.</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 비밀번호 화면 ──
+function renderPwScreen() {
+  return `<div class="pw-screen">
+    <div class="pw-title">매니저 전용</div>
+    <div class="pw-sub">비밀번호를 입력해주세요.</div>
+    <input class="pw-input" type="password" id="pw-input" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    ${S.pwError ? `<div class="pw-error">비밀번호가 틀렸습니다.</div>` : ""}
+    <button class="pw-btn" onclick="checkPw()">확인</button>
+  </div>`;
+}
+
+function checkPw() {
+  const val = document.getElementById("pw-input")?.value || "";
+  if (val === MANAGER_PASSWORD) { S.pwUnlocked = true; S.pwError = false; }
+  else { S.pwError = true; }
+  render();
+}
+
+// ── 매니저 목록 ──
+function renderManagerList() {
+  let h = `<div class="mgr-header"><span class="mgr-title">투어 목록</span><button class="btn-primary" onclick="startAdd()">+ 투어 추가</button></div>`;
+
+  if (S.addingTour) {
+    h += `<div class="add-form">
+      <input class="form-input" type="text" id="nn" placeholder="투어 이름 (예: 고비사막 4박5일)" value="${esc(S.newName)}" oninput="S.newName=this.value">
+      <div class="nights-row">
+        <label>박 수</label>
+        <input class="form-input" type="number" min="1" max="30" value="${S.newNights}" oninput="S.newNights=this.value" style="width:64px;margin-bottom:0;text-align:center">
+        <span style="font-size:12px;color:#aaa">박</span>
+      </div>
+      <div class="form-actions">
+        <button class="btn-create" onclick="createTour()">만들기</button>
+        <button class="btn-cancel" onclick="S.addingTour=false;render()">취소</button>
+      </div>
+    </div>`;
+  }
+
+  if (!S.tours.length && !S.addingTour) h += `<div class="empty-state">투어를 추가해 보세요.</div>`;
+
+  S.tours.forEach(t => {
+    const base = location.origin + location.pathname;
+    const links = TIERS.map(tier =>
+      `<div class="share-link-row">
+        <span class="share-badge ${tier.key}">${tier.label}</span>
+        <input class="share-link-input" readonly value="${base}?tour=${encodeURIComponent(t.id)}&tier=${tier.key}" onclick="this.select()">
+        <button class="btn-copy" onclick="copyLink(this,'${base}?tour=${encodeURIComponent(t.id)}&tier=${tier.key}')">복사</button>
+      </div>`
+    ).join("");
+
+    h += `<div class="tour-row" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="tour-row-name">${esc(t.name)}</div>
+          <div class="tour-row-sub">${t.nights}박 ${t.nights+1}일</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-edit" onclick="startEdit('${t.id}')">편집</button>
+          <button class="btn-del" onclick="delTour('${t.id}')">삭제</button>
+        </div>
+      </div>
+      <div class="share-panel">
+        <div class="share-panel-title">고객 공유 링크</div>
+        ${links}
+      </div>
+    </div>`;
+  });
+
+  return h;
+}
+
+function copyLink(btn, url) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = "✓";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "복사"; btn.classList.remove("copied"); }, 2000);
+  });
+}
+
+// ── 편집 ──
+function renderEdit() {
+  const t = S.editingTour;
+  let h = `<div class="edit-header">
+    <button class="btn-back" onclick="S.editingTour=null;render()">←</button>
+    <div><div class="edit-name">${esc(t.name)}</div><div class="edit-sub">${t.nights}박 ${t.nights+1}일</div></div>
+  </div>`;
+
+  t.accommodations.forEach((night, ni) => {
+    h += `<div class="night-section"><span class="night-label-edit">${ni+1}박차</span>`;
+    TIERS.forEach(tier => {
+      const acc = night[tier.key];
+      const uid = `img_${ni}_${tier.key}`;
+      h += `<div class="tier-block ${tier.key}">
+        <div class="tier-block-label">${tier.label}</div>
+        <input class="form-input" type="text" placeholder="숙소 이름" data-ni="${ni}" data-tier="${tier.key}" data-field="name" value="${esc(acc.name)}">
+        <div class="img-upload-area">
+          ${acc.photo
+            ? `<img class="img-preview" src="${acc.photo}" alt="사진"><button class="img-clear" onclick="event.stopPropagation();clearPhoto(${ni},'${tier.key}')">×</button>`
+            : `<div class="img-empty"><div class="img-empty-icon">📷</div><div class="img-empty-text">클릭하여 사진 업로드<br>jpg / png (2MB 이하)</div></div>`
+          }
+          <input type="file" class="img-hidden-input" accept="image/*" data-ni="${ni}" data-tier="${tier.key}" onchange="handlePhoto(this)">
+        </div>
+        <input class="form-input" type="text" placeholder="메모 (게르 2인실, 조식 포함 등)" data-ni="${ni}" data-tier="${tier.key}" data-field="notes" value="${esc(acc.notes)}">
+      </div>`;
+    });
+    h += `</div>`;
+  });
+
+  h += `<button class="btn-save${S.saved?" saved":""}" onclick="saveTour()">${S.saved ? "✓ 저장 완료" : "저장하기"}</button>`;
+  return h;
+}
+
+function bindEditInputs() {
+  document.querySelectorAll("[data-field]").forEach(el => {
+    el.addEventListener("input", e => {
+      const ni = +e.target.dataset.ni, tier = e.target.dataset.tier, field = e.target.dataset.field;
+      S.editingTour.accommodations[ni][tier][field] = e.target.value;
+    });
+  });
+}
+
+function handlePhoto(input) {
+  const ni = +input.dataset.ni, tier = input.dataset.tier;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert("2MB 이하 이미지를 사용해주세요.\nsquoosh.app에서 무료로 압축할 수 있습니다."); return; }
+  const reader = new FileReader();
+  reader.onload = e => { S.editingTour.accommodations[ni][tier].photo = e.target.result; render(); };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto(ni, tier) { S.editingTour.accommodations[ni][tier].photo = ""; render(); }
+
+// ── 이벤트 핸들러 ──
+function setView(v) {
+  S.view = v; S.selTourId = null; S.selTier = null;
+  S.editingTour = null; S.addingTour = false;
+  if (v === "manager" && !S.pwUnlocked) S.pwError = false;
+  render();
+}
+function selTour(id) { S.selTourId = id; S.selTier = null; render(); }
+function selTier(t)  { S.selTier = t; render(); }
+function startAdd()  { S.addingTour = true; render(); }
+function startEdit(id) { S.editingTour = JSON.parse(JSON.stringify(S.tours.find(x=>x.id===id))); render(); }
+
+function createTour() {
+  const name = S.newName.trim(); if (!name) return;
+  const n = Math.max(1, parseInt(S.newNights) || 1);
+  const t = { id: Date.now().toString(), name, nights: n, accommodations: Array.from({length:n}, emptyNight) };
+  persist([...S.tours, t]);
+  S.newName = ""; S.newNights = 2; S.addingTour = false;
+  S.editingTour = JSON.parse(JSON.stringify(t)); render();
+}
+
+function delTour(id) {
+  if (!confirm("정말 삭제할까요?")) return;
+  persist(S.tours.filter(t => t.id !== id)); render();
+}
+
+function saveTour() {
+  persist(S.tours.map(t => t.id === S.editingTour.id ? S.editingTour : t));
+  S.saved = true; render();
+  setTimeout(() => { S.saved = false; render(); }, 2000);
+}
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── 시작 ──
+loadData();
+</script>
+</body>
+</html>
